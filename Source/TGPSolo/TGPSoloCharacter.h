@@ -81,9 +81,15 @@ public:
 	uint32 bUsingMotionControllers : 1;
 
 protected:
-	
+
+	void Tick(float DeltaTime);
+
 	/** Fires a projectile. */
 	void OnFire();
+	void OnFireAuto(float value);
+	void OnFireSemi();
+
+	void OnThrow();
 
 	/** Resets HMD orientation and position in VR. */
 	void OnResetVR();
@@ -143,18 +149,64 @@ public:
 
 
 public:
-	UFUNCTION(BlueprintPure)
+	UFUNCTION(BlueprintCallable, Category = "Health")
 	float GetCurrentHealth();
-	UFUNCTION(BlueprintCallable)
-	void UpdateHealth();
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	float UpdateHealth(float HealthChangeAmount);
 
 
 	UPROPERTY(EditAnywhere, Category = "Health")
 		float MaxHealth = 100.0f;
 	UPROPERTY(EditAnywhere, Category = "Health")
 		float CurrentHealth;
-	UPROPERTY(EditAnywhere, Category = "Health")
-		float HealthChangeAmount;
+	//UPROPERTY(EditAnywhere, Category = "Health")
+	//	float HealthChangeAmount;
+
+
+
+
+
+	UFUNCTION(BlueprintPure, Category = "Stamina")
+		float GetCurrentStamina();
+	UFUNCTION(BlueprintPure, Category = "Stamina")
+		float UpdateStamina(float StaminaChangeAmount);
+
+
+	UPROPERTY(EditAnywhere, Category = "Stamina")
+		float MaxStamina = 100.0f;
+	UPROPERTY(EditAnywhere, Category = "Stamina")
+		float CurrentStamina;
+	//UPROPERTY(EditAnywhere, Category = "Stamina")
+	//	float StaminaChangeAmount;
+
+
+
+
+	UFUNCTION(BlueprintPure, Category = "Ammo")
+		int GetCurrentAmmo();
+	UFUNCTION(BlueprintPure, Category = "Ammo")
+		int UpdateAmmo(int AmmoChangeAmount);
+
+	UPROPERTY(EditAnywhere, Category = "Ammo")
+		int MaxAmmo;
+	UPROPERTY(EditAnywhere, Category = "Ammo")
+		int CurrentAmmo;
+	UPROPERTY(EditAnywhere, Category = "Ammo")
+		int CurrentAmmoLoaded;
+	UPROPERTY(EditAnywhere, Category = "Ammo")
+		bool FullAuto = true;
+
+	UFUNCTION(BlueprintCallable, Category = "Ammo")
+	void Reload();
+	int magCapMax = 30;
+	int currentMagCap;
+
+	bool canFire = true;
+
+	float timeSinceLastShot = 0.2f;
+
+	void ToggleFireRate();
+
 
 
 

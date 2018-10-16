@@ -12,6 +12,13 @@
 #include "MotionControllerComponent.h"
 #include "XRMotionControllerBase.h" // for FXRMotionControllerBase::RightHandSourceId
 
+
+
+//Purely for debug
+#include <EngineGlobals.h>
+#include <Runtime/Engine/Classes/Engine/Engine.h>
+// End debug
+
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
 //////////////////////////////////////////////////////////////////////////
@@ -19,6 +26,10 @@ DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
 ATGPSoloCharacter::ATGPSoloCharacter()
 {
+	CurrentHealth = MaxHealth;
+
+	CurrentAmmoLoaded = 0;
+
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 
@@ -105,6 +116,22 @@ void ATGPSoloCharacter::BeginPlay()
 	}
 }
 
+void ATGPSoloCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Time Since Last Shot:  %f"), timeSinceLastShot));
+	timeSinceLastShot += DeltaTime;
+	if (timeSinceLastShot > 0.2)
+	{
+		canFire = true;
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Can Fire!"));
+	}
+	else
+	{
+		canFire = false;
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Input
 
@@ -118,9 +145,15 @@ void ATGPSoloCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
 	// Bind fire event
-	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ATGPSoloCharacter::OnFire);
+
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ATGPSoloCharacter::OnFireSemi);
+	PlayerInputComponent->BindAxis("FireAuto", this, &ATGPSoloCharacter::OnFireAuto);
+	PlayerInputComponent->BindAction("ToggleFireRate", IE_Pressed, this, &ATGPSoloCharacter::ToggleFireRate);
+
 
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &ATGPSoloCharacter::OnResetVR);
+
+	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &ATGPSoloCharacter::Reload);
 
 	// Bind movement events
 	PlayerInputComponent->BindAxis("MoveForward", this, &ATGPSoloCharacter::MoveForward);
@@ -133,13 +166,34 @@ void ATGPSoloCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
 	PlayerInputComponent->BindAxis("TurnRate", this, &ATGPSoloCharacter::TurnAtRate);
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &ATGPSoloCharacter::LookUpAtRate);
+
+
+
+}
+
+void ATGPSoloCharacter::OnFireAuto(float value)
+{
+	if (value >= 1 && FullAuto)
+	{
+		OnFire();
+	}
+}
+
+void ATGPSoloCharacter::OnFireSemi()
+{
+	if (!FullAuto)
+	{
+		OnFire();
+	}
 }
 
 void ATGPSoloCharacter::OnFire()
 {
 	// try and fire a projectile
-	if (ProjectileClass != NULL)
+	if (ProjectileClass != NULL && CurrentAmmoLoaded > 0 && canFire)
 	{
+		timeSinceLastShot = 0.0f;
+		CurrentAmmoLoaded--;
 		UWorld* const World = GetWorld();
 		if (World != NULL)
 		{
@@ -163,23 +217,44 @@ void ATGPSoloCharacter::OnFire()
 				World->SpawnActor<ATGPSoloProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
 			}
 		}
-	}
 
-	// try and play the sound if specified
-	if (FireSound != NULL)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
-	}
-
-	// try and play a firing animation if specified
-	if (FireAnimation != NULL)
-	{
-		// Get the animation object for the arms mesh
-		UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance();
-		if (AnimInstance != NULL)
+		// try and play the sound if specified
+		if (FireSound != NULL)
 		{
-			AnimInstance->Montage_Play(FireAnimation, 1.f);
+			UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
 		}
+
+		// try and play a firing animation if specified
+		if (FireAnimation != NULL)
+		{
+			// Get the animation object for the arms mesh
+			UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance();
+			if (AnimInstance != NULL)
+			{
+				AnimInstance->Montage_Play(FireAnimation, 1.f);
+			}
+		}
+	}
+	else if (CurrentAmmoLoaded <= 0)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("No ammo loaded!"));
+	}
+}
+
+void ATGPSoloCharacter::OnThrow()
+{
+	UWorld* const World = GetWorld();
+	if (World != NULL)
+	{
+		const FRotator SpawnRotation = GetControlRotation();
+		// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
+		const FVector SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
+
+		//Set Spawn Collision Handling Override
+		FActorSpawnParameters ActorSpawnParams;
+		ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+
+		// spawn the projectile at the muzzle
 	}
 }
 
@@ -248,8 +323,53 @@ float ATGPSoloCharacter::GetCurrentHealth()
 	return CurrentHealth;
 }
 
-void ATGPSoloCharacter::UpdateHealth()
+float ATGPSoloCharacter::UpdateHealth(float HealthChangeAmount)
 {
 	CurrentHealth = CurrentHealth + HealthChangeAmount;
+	return CurrentHealth;
 }
 
+float ATGPSoloCharacter::GetCurrentStamina()
+{
+	return CurrentStamina;
+}
+
+float ATGPSoloCharacter::UpdateStamina(float StaminaChangeAmount)
+{
+	CurrentStamina = CurrentStamina + StaminaChangeAmount;
+	return CurrentStamina;
+}
+
+int ATGPSoloCharacter::GetCurrentAmmo()
+{
+	return CurrentAmmo;
+}
+
+int ATGPSoloCharacter::UpdateAmmo(int AmmoChangeAmount)
+{
+	CurrentAmmo = CurrentAmmo + AmmoChangeAmount;
+	return CurrentAmmo;
+}
+
+void ATGPSoloCharacter::Reload()
+{
+	CurrentAmmo += CurrentAmmoLoaded;
+
+	if (CurrentAmmo > magCapMax)
+	{
+		CurrentAmmoLoaded = magCapMax;
+		CurrentAmmo -= magCapMax;
+	}
+	else
+	{
+		CurrentAmmoLoaded = CurrentAmmo;
+		CurrentAmmo = 0;
+	}
+	//return CurrentAmmo;
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Reloaded!"));
+}
+
+void ATGPSoloCharacter::ToggleFireRate()
+{
+	FullAuto = !FullAuto;
+}
