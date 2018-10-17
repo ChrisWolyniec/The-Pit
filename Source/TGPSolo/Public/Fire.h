@@ -32,6 +32,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Damage")
 		float GetDamageValue();
 
+	UPROPERTY(EditAnywhere, Category = "FX")
+		float fireParticleSize;
+
+	UPROPERTY(EditAnywhere, Category = "FX")
+		class UParticleSystem* FireParticles;
+
+	UPROPERTY(EditAnywhere, Category = "FX")
+		class USoundBase* FireSound;
+
 	bool onFire = false;
 	AActor *character;
 

@@ -198,7 +198,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Ammo")
 	void Reload();
-	int magCapMax = 30;
+
+	UPROPERTY(EditAnywhere, Category = "Ammo")
+	int magCapacity;
 	int currentMagCap;
 
 	bool canFire = true;

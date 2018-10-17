@@ -119,12 +119,10 @@ void ATGPSoloCharacter::BeginPlay()
 void ATGPSoloCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Time Since Last Shot:  %f"), timeSinceLastShot));
 	timeSinceLastShot += DeltaTime;
 	if (timeSinceLastShot > 0.2)
 	{
 		canFire = true;
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Can Fire!"));
 	}
 	else
 	{
@@ -353,20 +351,24 @@ int ATGPSoloCharacter::UpdateAmmo(int AmmoChangeAmount)
 
 void ATGPSoloCharacter::Reload()
 {
-	CurrentAmmo += CurrentAmmoLoaded;
+	if (CurrentAmmoLoaded != magCapacity)
+	{
+		CurrentAmmo += CurrentAmmoLoaded;
+		timeSinceLastShot = -1.0f;
 
-	if (CurrentAmmo > magCapMax)
-	{
-		CurrentAmmoLoaded = magCapMax;
-		CurrentAmmo -= magCapMax;
+		if (CurrentAmmo > magCapacity)
+		{
+			CurrentAmmoLoaded = magCapacity;
+			CurrentAmmo -= magCapacity;
+		}
+		else
+		{
+			CurrentAmmoLoaded = CurrentAmmo;
+			CurrentAmmo = 0;
+		}
+		//return CurrentAmmo;
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Reloaded!"));
 	}
-	else
-	{
-		CurrentAmmoLoaded = CurrentAmmo;
-		CurrentAmmo = 0;
-	}
-	//return CurrentAmmo;
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Reloaded!"));
 }
 
 void ATGPSoloCharacter::ToggleFireRate()

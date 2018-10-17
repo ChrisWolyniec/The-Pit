@@ -4,6 +4,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "EngineMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Grenade.generated.h"
 
@@ -24,7 +25,7 @@ class AGrenade : public AActor
 		class UParticleSystem* ExplosionParticles;
 
 	UPROPERTY(EditAnywhere, Category = "FX")
-		class USoundCue* ExplosionSound;
+		class USoundBase* ExplosionSound;
 
 	UPROPERTY(EditAnywhere, Category = "Grenade")
 		float Radius = 500.0f;

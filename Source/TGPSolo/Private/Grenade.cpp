@@ -4,6 +4,8 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystemComponent.h"
+#include "WorldCollision.h"
 
 
 // Sets default values
@@ -75,6 +77,28 @@ void AGrenade::Tick(float DeltaTime)
 
 void AGrenade::OnDetonate()
 {
-	UParticleSystemComponent* Explosion = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplosionParticles, GetActorTransform(), true);
+	UParticleSystemComponent* Explosion = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplosionParticles, GetActorTransform());
 	Explosion->SetRelativeScale3D(FVector(4.0f));
+
+	UGameplayStatics::PlaySoundAtLocation(this, ExplosionSound, GetActorLocation());
+
+	TArray<FHitResult> HitObjects;
+
+	FVector StartTrace = GetActorLocation();
+	FVector EndTrace = StartTrace;
+	EndTrace.Z += 300.0f;
+
+	FCollisionShape CollisionShape;
+	CollisionShape.ShapeType = ECollisionShape::Sphere;
+	CollisionShape.SetSphere(Radius);
+
+
+	if (GetWorld()->SweepMultiByChannel(HitObjects, StartTrace, EndTrace, FQuat::FQuat(), ECC_WorldStatic, CollisionShape))
+	{
+		for (auto Object = HitObjects.CreateIterator(); Object; Object++)
+		{
+			UStaticMeshComponent* StaticMesh = Cast<UStaticMeshComponent>((*Object).Actor->GetRootComponent());
+			//ADestructible TODO
+		}
+	}
 }

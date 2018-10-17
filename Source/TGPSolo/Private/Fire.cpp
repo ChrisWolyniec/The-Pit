@@ -3,6 +3,8 @@
 #include "Fire.h"
 #include "Components/SphereComponent.h"
 #include "../Public/Fire.h"
+#include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystemComponent.h"
 
 // Sets default values
 AFire::AFire()
@@ -28,7 +30,10 @@ void AFire::NotifyActorEndOverlap(AActor * OtherActor)
 void AFire::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	UParticleSystemComponent* Fire = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), FireParticles, GetActorTransform(), false);
+	Fire->SetRelativeScale3D(FVector(fireParticleSize));
+
+	UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
 }
 
 // Called every frame
@@ -39,7 +44,6 @@ void AFire::Tick(float DeltaTime)
 	{
 		OnActivate(character);
 	}
-
 }
 
 float AFire::GetDamageValue()
