@@ -3,6 +3,8 @@
 #include "TGPSoloProjectile.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
+#include "DestructibleActor.h"
+#include "DestructibleComponent.h"
 
 ATGPSoloProjectile::ATGPSoloProjectile() 
 {
@@ -37,6 +39,12 @@ void ATGPSoloProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
 	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL) && OtherComp->IsSimulatingPhysics())
 	{
 		OtherComp->AddImpulseAtLocation(GetVelocity() * 100.0f, GetActorLocation());
+		
+		//ADestructibleActor* destructibleActor = Cast<ADestructibleActor>((*OtherActor).GetActor);
+
+
+
+
 
 		Destroy();
 	}

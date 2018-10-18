@@ -2,6 +2,7 @@
 
 #include "TGPSoloCharacter.h"
 #include "TGPSoloProjectile.h"
+#include "Grenade.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -143,10 +144,11 @@ void ATGPSoloCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
 	// Bind fire event
-
 	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ATGPSoloCharacter::OnFireSemi);
 	PlayerInputComponent->BindAxis("FireAuto", this, &ATGPSoloCharacter::OnFireAuto);
 	PlayerInputComponent->BindAction("ToggleFireRate", IE_Pressed, this, &ATGPSoloCharacter::ToggleFireRate);
+
+	PlayerInputComponent->BindAction("Throw", IE_Pressed, this, &ATGPSoloCharacter::OnThrow);
 
 
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &ATGPSoloCharacter::OnResetVR);
@@ -253,6 +255,8 @@ void ATGPSoloCharacter::OnThrow()
 		ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
 
 		// spawn the projectile at the muzzle
+		World->SpawnActor<AGrenade>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+
 	}
 }
 

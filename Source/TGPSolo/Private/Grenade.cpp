@@ -6,6 +6,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "WorldCollision.h"
+#include "DestructibleActor.h"
+#include "DestructibleComponent.h"
 
 
 // Sets default values
@@ -97,8 +99,18 @@ void AGrenade::OnDetonate()
 	{
 		for (auto Object = HitObjects.CreateIterator(); Object; Object++)
 		{
-			UStaticMeshComponent* StaticMesh = Cast<UStaticMeshComponent>((*Object).Actor->GetRootComponent());
-			//ADestructible TODO
+			UStaticMeshComponent* staticMesh = Cast<UStaticMeshComponent>((*Object).Actor->GetRootComponent());
+			ADestructibleActor* destructibleActor = Cast<ADestructibleActor>((*Object).GetActor());
+
+			if (staticMesh)
+			{
+				staticMesh->AddRadialImpulse(GetActorLocation(), 1000.0f, 5000.0f, ERadialImpulseFalloff::RIF_Linear, true);
+			}
+			else if (destructibleActor)
+			{
+				destructibleActor->GetDestructibleComponent()->ApplyRadiusDamage(10.0f, Object->ImpactPoint, 500.0f, 3000.0f, false);
+			}
 		}
 	}
+	Destroy();
 }
