@@ -44,8 +44,7 @@ AGrenade::AGrenade()
 
 void AGrenade::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	// Only add impulse and destroy projectile if we hit a physics
-	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL) && OtherComp->IsSimulatingPhysics()) //May need to delete last two sections? TODELETE
+	if ((OtherActor != NULL) && (OtherActor != this))
 	{
 		OnDetonate();
 	}
@@ -69,7 +68,7 @@ void AGrenade::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	timeSinceThrown += DeltaTime;
 
-	if (timeSinceThrown > 5.0f)
+	if (timeSinceThrown > 2.0f)
 	{
 		OnDetonate();
 	}
