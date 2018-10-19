@@ -255,7 +255,7 @@ void ATGPSoloCharacter::OnThrow()
 		ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
 
 		// spawn the projectile at the muzzle
-		World->SpawnActor<AGrenade>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+		World->SpawnActor<AGrenade>(GrenadeClass, SpawnLocation, SpawnRotation, ActorSpawnParams); //Grenade Class is NULL :/
 
 	}
 }

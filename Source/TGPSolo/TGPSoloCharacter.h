@@ -68,6 +68,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category=Projectile)
 	TSubclassOf<class ATGPSoloProjectile> ProjectileClass;
 
+	UPROPERTY(EditDefaultsOnly, Category=Grenade)
+	TSubclassOf<class AGrenade> GrenadeClass;
+
 	/** Sound to play each time we fire */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
 	class USoundBase* FireSound;
