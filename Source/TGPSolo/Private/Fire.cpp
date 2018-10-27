@@ -30,7 +30,7 @@ void AFire::NotifyActorEndOverlap(AActor * OtherActor)
 void AFire::BeginPlay()
 {
 	Super::BeginPlay();
-	UParticleSystemComponent* Fire = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), FireParticles, GetActorTransform(), false);
+	Fire = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), FireParticles, GetActorTransform(), false);
 	Fire->SetRelativeScale3D(FVector(fireParticleSize));
 
 	UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
@@ -49,6 +49,12 @@ void AFire::Tick(float DeltaTime)
 float AFire::GetDamageValue()
 {
 	return FireDamage;
+}
+
+void AFire::DestroyFire()
+{
+	Fire->SetRelativeScale3D(FVector(0));
+	Destroy();
 }
 
 

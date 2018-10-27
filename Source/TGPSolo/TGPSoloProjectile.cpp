@@ -27,7 +27,7 @@ ATGPSoloProjectile::ATGPSoloProjectile()
 	ProjectileMovement->InitialSpeed = 3000.f;
 	ProjectileMovement->MaxSpeed = 3000.f;
 	ProjectileMovement->bRotationFollowsVelocity = true;
-	ProjectileMovement->bShouldBounce = true;
+	ProjectileMovement->bShouldBounce = false;
 
 	// Die after 3 seconds by default
 	InitialLifeSpan = 3.0f;
@@ -36,18 +36,25 @@ ATGPSoloProjectile::ATGPSoloProjectile()
 void ATGPSoloProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	// Only add impulse and destroy projectile if we hit a physics
+
 	if ((OtherActor != NULL) && (OtherActor != this) && (OtherComp != NULL) && OtherComp->IsSimulatingPhysics())
 	{
 		OtherComp->AddImpulseAtLocation(GetVelocity() * 100.0f, GetActorLocation());
-		
-
-
-		//ADestructibleActor* destructibleActor = Cast<ADestructibleActor>((*OtherActor).GetActor);
-
-
-
-
-
-		Destroy();
 	}
+	if (Cast<ADestructibleActor>(OtherActor) != nullptr)
+	{
+		ADestructibleActor* destructibleActor = Cast<ADestructibleActor>(OtherActor);
+		destructibleActor->GetDestructibleComponent()->ApplyRadiusDamage(10.0f, this->GetActorLocation(), 5.0f, 3000.0f, false);
+	}
+	else if (Cast<ATarget>(OtherActor) != nullptr)
+	{
+		ATarget* target = Cast<ATarget>(OtherActor);
+		target->DestroyTarget();
+	}
+	else if (Cast<ABarrel>(OtherActor) != nullptr)
+	{
+		ABarrel* barrel = Cast<ABarrel>(OtherActor);
+		barrel->Ignite();
+	}
+	Destroy();
 }

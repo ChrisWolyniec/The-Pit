@@ -15,6 +15,15 @@
 
 
 
+#include "GameFramework/ProjectileMovementComponent.h"
+#include "Components/SphereComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystemComponent.h"
+#include "WorldCollision.h"
+#include "DestructibleActor.h"
+#include "DestructibleComponent.h"
+
+
 //Purely for debug
 #include <EngineGlobals.h>
 #include <Runtime/Engine/Classes/Engine/Engine.h>
@@ -120,7 +129,9 @@ void ATGPSoloCharacter::BeginPlay()
 void ATGPSoloCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	deltaTime = DeltaTime;
 	timeSinceLastShot += DeltaTime;
+	sinceLastThrow += DeltaTime;
 	if (timeSinceLastShot > 0.2)
 	{
 		canFire = true;
@@ -129,6 +140,30 @@ void ATGPSoloCharacter::Tick(float DeltaTime)
 	{
 		canFire = false;
 	}
+
+	if (grenadeHeld)
+	{
+		heldTime += DeltaTime;
+		if (heldTime > 3)
+		{
+			OnThrowEnd();
+			justThrown = true;
+		}
+	}
+
+
+	FString enemiesKilledOutput = FString::FromInt(enemiesKilled);
+	GEngine->AddOnScreenDebugMessage(-1, deltaTime, FColor::Red, TEXT("Enemies Killed: ") + enemiesKilledOutput);
+
+	FString hostagesKilledOutput = FString::FromInt(hostagesKilled);
+	GEngine->AddOnScreenDebugMessage(-1, deltaTime, FColor::Red, TEXT("Hostages Killed: ") + hostagesKilledOutput);
+
+	GEngine->AddOnScreenDebugMessage(-1, deltaTime, FColor::Red, TEXT("    "));
+
+	GEngine->AddOnScreenDebugMessage(-1, deltaTime, FColor::Red, TEXT("Health: ") + FString::FromInt(CurrentHealth));
+	GEngine->AddOnScreenDebugMessage(-1, deltaTime, FColor::Red, TEXT("Grenades: ") + FString::FromInt(CurrentGrenades));
+	GEngine->AddOnScreenDebugMessage(-1, deltaTime, FColor::Red, TEXT("Ammo: ") + FString::FromInt(CurrentAmmoLoaded) + TEXT(" / ") + FString::FromInt(CurrentAmmo));
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -148,16 +183,22 @@ void ATGPSoloCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
 	PlayerInputComponent->BindAxis("FireAuto", this, &ATGPSoloCharacter::OnFireAuto);
 	PlayerInputComponent->BindAction("ToggleFireRate", IE_Pressed, this, &ATGPSoloCharacter::ToggleFireRate);
 
-	PlayerInputComponent->BindAction("Throw", IE_Pressed, this, &ATGPSoloCharacter::OnThrow);
+	// Bind grenade events
+	PlayerInputComponent->BindAction("Throw", IE_Pressed, this, &ATGPSoloCharacter::OnThrowStart);
+	PlayerInputComponent->BindAction("Throw", IE_Released, this, &ATGPSoloCharacter::OnThrowEnd);
+	PlayerInputComponent->BindAction("ToggleGrenades", IE_Released, this, &ATGPSoloCharacter::ToggleGrenade);
 
 
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &ATGPSoloCharacter::OnResetVR);
-
 	PlayerInputComponent->BindAction("Reload", IE_Pressed, this, &ATGPSoloCharacter::Reload);
 
 	// Bind movement events
 	PlayerInputComponent->BindAxis("MoveForward", this, &ATGPSoloCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ATGPSoloCharacter::MoveRight);
+
+	// Bind sprint events
+	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ATGPSoloCharacter::SprintStart);
+	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ATGPSoloCharacter::SprintEnd);
 
 	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
 	// "turn" handles devices that provide an absolute delta, such as a mouse.
@@ -245,9 +286,24 @@ void ATGPSoloCharacter::OnFire()
 	}
 }
 
-void ATGPSoloCharacter::OnThrow()
+void ATGPSoloCharacter::ToggleGrenade()
 {
-	if (GrenadeClass != NULL)
+	sticky = !sticky;
+}
+
+void ATGPSoloCharacter::OnThrowStart()
+{
+	if (CurrentGrenades > 0)
+	{
+		grenadeHeld = true;
+		justThrown = false;
+	}
+}
+
+
+void ATGPSoloCharacter::OnThrowEnd()
+{
+	if (GrenadeClass != NULL && sinceLastThrow > 0.5 && !justThrown && CurrentGrenades > 0)
 	{
 		UWorld* const World = GetWorld();
 		if (World != NULL)
@@ -261,14 +317,19 @@ void ATGPSoloCharacter::OnThrow()
 			ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
 
 			// spawn the projectile at the muzzle
-			World->SpawnActor<AGrenade>(GrenadeClass, SpawnLocation, SpawnRotation, ActorSpawnParams); //Grenade Class is NULL :/
-
+			AGrenade* currentGrenade = World->SpawnActor<AGrenade>(GrenadeClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+			if (currentGrenade != nullptr)
+			{
+				currentGrenade->SetDuration(heldTime);
+				currentGrenade->ProjectileMovement->bShouldBounce = !sticky;
+			}
 		}
+		sinceLastThrow = 0.0f;
+		CurrentGrenades--;
 	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Grenade Class = NULL!"));
-	}
+
+	grenadeHeld = false;
+	heldTime = 0.0f;
 }
 
 void ATGPSoloCharacter::OnResetVR()
@@ -305,7 +366,6 @@ void ATGPSoloCharacter::MoveForward(float Value)
 {
 	if (Value != 0.0f)
 	{
-		// add movement in that direction
 		AddMovementInput(GetActorForwardVector(), Value);
 	}
 }
@@ -317,6 +377,7 @@ void ATGPSoloCharacter::MoveRight(float Value)
 		// add movement in that direction
 		AddMovementInput(GetActorRightVector(), Value);
 	}
+	
 }
 
 void ATGPSoloCharacter::TurnAtRate(float Rate)
@@ -339,6 +400,13 @@ float ATGPSoloCharacter::GetCurrentHealth()
 float ATGPSoloCharacter::UpdateHealth(float HealthChangeAmount)
 {
 	CurrentHealth = CurrentHealth + HealthChangeAmount;
+	FString currHealth = FString::SanitizeFloat(CurrentHealth);
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, currHealth);
+	if (CurrentHealth < 0 && !killed)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 9999999.9f, FColor::Red, TEXT("You are dead."));
+		killed = true;
+	}
 	return CurrentHealth;
 }
 
@@ -382,11 +450,36 @@ void ATGPSoloCharacter::Reload()
 			CurrentAmmo = 0;
 		}
 		//return CurrentAmmo;
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Reloaded!"));
+		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Reloaded!"));
 	}
 }
 
 void ATGPSoloCharacter::ToggleFireRate()
 {
 	FullAuto = !FullAuto;
+}
+
+void ATGPSoloCharacter::SprintStart()
+{
+	GetCharacterMovement()->MaxWalkSpeed *= sprintMultiplier;
+
+}
+
+void ATGPSoloCharacter::SprintEnd()
+{
+	GetCharacterMovement()->MaxWalkSpeed /= sprintMultiplier;
+}
+
+void ATGPSoloCharacter::UpdateEnemiesKilled()
+{
+	enemiesKilled ++;
+	//FString enemiesKilledOutput = FString::FromInt(enemiesKilled);
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Enemies Killed: ") + enemiesKilledOutput);
+}
+
+void ATGPSoloCharacter::UpdateHostagesKilled()
+{
+	hostagesKilled++;
+	//FString hostagesKilledOutput = FString::FromInt(hostagesKilled);
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Hostages Killed: ") + hostagesKilledOutput);
 }

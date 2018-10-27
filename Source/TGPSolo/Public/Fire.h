@@ -7,6 +7,7 @@
 #include "Fire.generated.h"
 
 class USphereComponent;
+class UParticleSystem;
 
 UCLASS()
 class TGPSOLO_API AFire : public AActor
@@ -31,6 +32,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Damage")
 		float GetDamageValue();
+
+	void DestroyFire();
+
+	UParticleSystemComponent* Fire;
 
 	UPROPERTY(EditAnywhere, Category = "FX")
 		float fireParticleSize;

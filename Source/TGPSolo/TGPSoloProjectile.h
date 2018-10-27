@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Target.h"
+#include "Barrel.h"
 #include "TGPSoloProjectile.generated.h"
 
 UCLASS(config=Game)

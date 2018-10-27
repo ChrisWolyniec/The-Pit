@@ -13,13 +13,12 @@ class AGrenade : public AActor
 {
 	GENERATED_BODY()
 
-		/** Sphere collision component */
+		///** Sphere collision component */
 		UPROPERTY(VisibleDefaultsOnly, Category = Projectile)
 		class USphereComponent* CollisionComp;
 
 	/** Projectile movement component */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-		class UProjectileMovementComponent* ProjectileMovement;
+	
 
 	UPROPERTY(EditAnywhere, Category = "FX")
 		class UParticleSystem* ExplosionParticles;
@@ -30,7 +29,20 @@ class AGrenade : public AActor
 	UPROPERTY(EditAnywhere, Category = "Grenade")
 		float Radius = 500.0f;
 
+	UPROPERTY(EditAnywhere, Category = "Grenade")
+		float duration = 3.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Damage")
+		float damage = -200.0f;
+
+	bool sticky;
+
+
+
 public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	class UProjectileMovementComponent* ProjectileMovement;
+
 	AGrenade();
 
 	virtual void BeginPlay() override;
@@ -40,14 +52,17 @@ public:
 
 	UFUNCTION()
 	void OnDetonate();
+	void SetDuration(float heldTime);
 
 	/** called when projectile hits something */
-	UFUNCTION()
-		void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+	//UFUNCTION()
+	//	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
 	/** Returns CollisionComp subobject **/
 	FORCEINLINE class USphereComponent* GetCollisionComp() const { return CollisionComp; }
 	/** Returns ProjectileMovement subobject **/
 	FORCEINLINE class UProjectileMovementComponent* GetProjectileMovement() const { return ProjectileMovement; }
+
+
 };
 

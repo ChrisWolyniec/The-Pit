@@ -89,10 +89,12 @@ protected:
 
 	/** Fires a projectile. */
 	void OnFire();
+	void ToggleGrenade();
 	void OnFireAuto(float value);
 	void OnFireSemi();
 
-	void OnThrow();
+	void OnThrowStart();
+	void OnThrowEnd();
 
 	/** Resets HMD orientation and position in VR. */
 	void OnResetVR();
@@ -198,6 +200,10 @@ public:
 		int CurrentAmmoLoaded;
 	UPROPERTY(EditAnywhere, Category = "Ammo")
 		bool FullAuto = true;
+	UPROPERTY(EditAnywhere, Category = "Ammo")
+		int MaxGrenades = 5;
+	UPROPERTY(EditAnywhere, Category = "Ammo")
+		int CurrentGrenades = 5;
 
 	UFUNCTION(BlueprintCallable, Category = "Ammo")
 	void Reload();
@@ -206,13 +212,35 @@ public:
 	int magCapacity;
 	int currentMagCap;
 
+	bool sticky = false;
+	bool killed = false;
 	bool canFire = true;
 
 	float timeSinceLastShot = 0.2f;
+	float sinceLastThrow = 0.0f;
+
+	bool justThrown = false;
 
 	void ToggleFireRate();
 
+	void SprintStart();
+	void SprintEnd();
 
+	void UpdateEnemiesKilled();
+
+	void UpdateHostagesKilled();
+
+	float heldTime = 0.0f;
+
+	float deltaTime = 0;
+
+	bool grenadeHeld = false;
+
+	UPROPERTY(EditAnywhere, Category = "Sprinting")
+	float sprintMultiplier = 1.5;
+
+	int enemiesKilled = 0;
+	int hostagesKilled = 0;
 
 
 protected:
